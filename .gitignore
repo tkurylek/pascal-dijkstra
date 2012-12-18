@@ -8,3 +8,7 @@ __history
 *.exe
 *.dll
 bin/*
+lib/*
+backup/*
+*.exe
+*.lps
