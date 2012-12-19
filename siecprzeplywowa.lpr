@@ -4,39 +4,42 @@ uses
   SysUtils;
 
 const
-  INFINITY = -1;
+  INFINITY = High(integer);
 
 type
   NodePointer = ^Node;
 
-  Node = record
-    id: integer;
-    neighbors: array of NodePointer;
-    distanceToNeighbors: array of integer;
+  Edge = record
+    endNode: NodePointer;
+    distanceToEndNode: integer;
   end;
 
-  function createNode(id: integer; neighborsCount: integer): NodePointer;
+  Node = record
+    id: integer;
+    edges: array of Edge;
+  end;
+
+  function createNode(id: integer; edgesCount: integer): NodePointer;
   var
     buildedNode: Node;
   begin
     buildedNode.id := id;
-    SetLength(buildedNode.neighbors, neighborsCount);
-    SetLength(buildedNode.distanceToNeighbors, neighborsCount);
+    SetLength(buildedNode.edges, edgesCount);
     createNode := @buildedNode;
   end;
 
-
-const
-  TESTERS_COUNT = 10;
-var
-  testers: array[0..TESTERS_COUNT] of NodePointer;
-  id: integer;
-begin
-  for id := 0 to TESTERS_COUNT - 1 do
-  begin
-    testers[id] := createNode(id, TESTERS_COUNT);
+type
+  NodesList = record
+    currentNode: NodePointer;
+    nextNode: NodePointer;
   end;
 
+  function hasNextNode(listOfNodes: NodesList): boolean;
+  begin
+    hasNextNode := listOfNodes.nextNode <> nil;
+  end;
+
+begin
   writeln('Hello World!');
   readln();
 end.
