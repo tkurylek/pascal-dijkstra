@@ -60,20 +60,20 @@ type
 
   function containsCharInString(suspect: char; container: string): boolean;
   begin
-    containsCharInString := (pos(suspect, container) = 0);
+    containsCharInString := (pos(suspect, container) <> 0);
   end;
 
   function hasExpectedSwitches(): boolean;
   var
     i: integer;
     parametersString: string;
-    expectedSwitchs: array[1..4] of char = ('i', 'o', 's', 'k');
+    expectedSwitches: array[1..4] of char = ('i', 'o', 's', 'k');
     containsAllSwitches: boolean = True;
   begin
     parametersString := getParametersAsString();
-    for i := 1 to High(expectedSwitchs) do
+    for i := 1 to High(expectedSwitches) do
     begin
-      if containsCharInString(expectedSwitchs[i], parametersString) then
+      if not containsCharInString(expectedSwitches[i], parametersString) then
       begin
         containsAllSwitches := False;
         break;
