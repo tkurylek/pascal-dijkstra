@@ -135,16 +135,16 @@ type
     end;
   end;
 
-  function areValuesSetCorrectly(): boolean;
+  function areParametrizedValuesSetCorrectlymich(): boolean;
   begin
-    areValuesSetCorrectly := isAnExistingFile(getParametrizedInputFilePath()) and
+    areParametrizedValuesSetCorrectly := isAnExistingFile(getParametrizedInputFilePath()) and
       isValidFilename(getParametrizedOutputFileName());
   end;
 
   function areParametersSettedCorrectly(): boolean;
   begin
     areParametersSettedCorrectly := containsExpectedParametersCount() and hasExpectedSwitches() and
-      areValuesSetCorrectly();
+      areParametrizedValuesSetCorrectly();
   end;
 
 begin
@@ -152,11 +152,11 @@ begin
   writeln('containsExpectedParametersCount() resulted: ', containsExpectedParametersCount());
   writeln('hasExpectedSwitches() resulted: ', hasExpectedSwitches());
   writeln('areParametersSettedCorrectly() resulted: ', areParametersSettedCorrectly());
-  writeln('valuesAreSetCorrectly() resulted: ', areValuesSetCorrectly());
-  writeln('isAnExistingFile(getParametrizedInputFilePath()) resulted: ',
-    isAnExistingFile(getParametrizedInputFilePath()));
-  writeln('isValidFilename(getParametrizedOutputFileName()) resulted: ',
-    isValidFilename(getParametrizedOutputFileName()));
+  writeln('valuesAreSetCorrectly() resulted: ', areParametrizedValuesSetCorrectly());
+  writeln('isAnExistingFile(getParametrizedInputFilePath()) resulted: ', isAnExistingFile(
+    getParametrizedInputFilePath()));
+  writeln('isValidFilename(getParametrizedOutputFileName()) resulted: ', isValidFilename(
+    getParametrizedOutputFileName()));
   writeln;
   writeln('Hit Enter to exit.');
   readln();
