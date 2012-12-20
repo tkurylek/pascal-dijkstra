@@ -84,6 +84,8 @@ type
 
   function valuesAreSetCorrectly(): boolean;
   begin
+    //valuesAreSetCorrectly := isAnExistingFile(getInputFilePath()) and isValidFilename(getOutputFileName());
+    valuesAreSetCorrectly := False;
   end;
 
   function areParametersSettedCorrectly(): boolean;
@@ -94,8 +96,12 @@ type
 
 begin
   writeln('TESTS RESULTS:');
+  writeln('getParametersAsString() resuled: "', getParametersAsString(), '"');
   writeln('containsExpectedParametersCount() resuled: ', containsExpectedParametersCount());
   writeln('hasExpectedSwitches() resuled: ', hasExpectedSwitches());
+  writeln('areParametersSettedCorrectly() resuled: ', areParametersSettedCorrectly());
+  writeln('valuesAreSetCorrectly( resuled: ', valuesAreSetCorrectly());
+  writeln;
   writeln('Hit Enter to exit.');
   readln();
 end.
