@@ -85,11 +85,14 @@ type
       end;
   end;
 
+<<<<<<< HEAD
   function isAnExistingFile(filePath: string): boolean;
   begin
     isAnExistingFile := FileExists(filePath);
   end;
 
+=======
+>>>>>>> f7146ab13eb541407d7381f735fff0b3b28282a9
   function areParametrizedValuesSetCorrectly(): boolean;
   begin
     areParametrizedValuesSetCorrectly := isAnExistingFile(getParametrizedInputFilePath()) and
