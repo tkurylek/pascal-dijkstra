@@ -6,6 +6,9 @@ uses
 const
   INFINITY = High(integer);
 
+var
+  i: integer;
+
 type
   NodePointer = ^Node;
 
@@ -40,8 +43,6 @@ type
   end;
 
   function getValueOfParameter(parameter: string): string;
-  var
-    i: integer;
   begin
     for i := 1 to Paramcount - 1 do
       if parameter = ParamStr(i) then
@@ -71,19 +72,48 @@ type
     getParametrizedEndNode := getValueOfParameter('-k');
   end;
 
+  function containsExpectedParametersCount(): boolean;
+  const
+    EXPECTED_PARAMETERS_COUNT = 8;
+  begin
+    containsExpectedParametersCount := Paramcount = EXPECTED_PARAMETERS_COUNT;
+  end;
+
+  function getParametersAsString(): string;
+  begin
+    for i := 1 to Paramcount do
+    begin
+      getParametersAsString := getParametersAsString + ' ' + ParamStr(i);
+    end;
+  end;
+
   function containsCharInString(suspect: char; container: string): boolean;
   begin
-    containsCharInString := (pos(suspect, container) <> 0);
+    containsCharInString := pos(suspect, container) <> 0;
+  end;
+
+  function hasExpectedSwitches(): boolean;
+  var
+    parameters: string;
+    expectedSwitches: array[1..4] of char = ('i', 'o', 's', 'k');
+  begin
+    hasExpectedSwitches := True;
+    parameters := getParametersAsString();
+    for i := 1 to High(expectedSwitches) do
+      if not containsCharInString(expectedSwitches[i], parameters) then
+      begin
+        hasExpectedSwitches := False;
+        break;
+      end;
   end;
 
   function isValidFilename(filename: string): boolean;
   var
-    i: integer;
-    illeagalCharacters: array[1..9] of char = ('*', ':', '?', '"', '<', '>', '|', '/', '\');
+    illegalCharacters: array[1..9] of char = ('*', ':', '?', '"', '<', '>', '|', '/', '\');
   begin
     isValidFilename := True;
-    for i := 1 to High(illeagalCharacters) do
-      if containsCharInString(illeagalCharacters[i], filename) then
+    for i := 1 to High(illegalCharacters) do
+      if containsCharInString(illegalCharacters[i], filename) then
       begin
         isValidFilename := False;
         break;
@@ -101,42 +131,6 @@ type
       isValidFilename(getParametrizedOutputFileName());
   end;
 
-  function containsExpectedParametersCount(): boolean;
-  const
-    EXPECTED_PARAMETERS_COUNT = 8;
-  begin
-    containsExpectedParametersCount := Paramcount = EXPECTED_PARAMETERS_COUNT;
-  end;
-
-  function getParametersAsString(): string;
-  var
-    parametersAsString: string = '';
-    i: integer;
-  begin
-    for i := 1 to Paramcount do
-    begin
-      parametersAsString := parametersAsString + ' ' + ParamStr(i);
-    end;
-    getParametersAsString := parametersAsString;
-  end;
-
-  function hasExpectedSwitches(): boolean;
-  var
-    i: integer;
-    parametersString: string;
-    expectedSwitches: array[1..4] of char = ('i', 'o', 's', 'k');
-    containsAllSwitches: boolean = True;
-  begin
-    parametersString := getParametersAsString();
-    for i := 1 to High(expectedSwitches) do
-      if not containsCharInString(expectedSwitches[i], parametersString) then
-      begin
-        containsAllSwitches := False;
-        break;
-      end;
-    hasExpectedSwitches := containsAllSwitches;
-  end;
-
   function areParametersSetCorrectly(): boolean;
   begin
     areParametersSetCorrectly := containsExpectedParametersCount() and hasExpectedSwitches() and
@@ -145,10 +139,12 @@ type
 
 begin
   writeln('TESTS RESULTS:');
+  writeln;
+  writeln('PARAMETERS:');
+  writeln('areParametersSetCorrectly() resulted: ', areParametersSetCorrectly());
   writeln('containsExpectedParametersCount() resulted: ', containsExpectedParametersCount());
   writeln('hasExpectedSwitches() resulted: ', hasExpectedSwitches());
-  writeln('areParametersSettedCorrectly() resulted: ', areParametersSetCorrectly());
-  writeln('valuesAreSetCorrectly() resulted: ', areParametrizedValuesSetCorrectly());
+  writeln('areValuesSetCorrectly() resulted: ', areParametrizedValuesSetCorrectly());
   writeln('isAnExistingFile(getParametrizedInputFilePath()) resulted: ', isAnExistingFile(
     getParametrizedInputFilePath()));
   writeln('isValidFilename(getParametrizedOutputFileName()) resulted: ', isValidFilename(
