@@ -71,6 +71,11 @@ type
     getParametrizedEndNode := getValueOfParameter('-k');
   end;
 
+  function containsCharInString(suspect: char; container: string): boolean;
+  begin
+    containsCharInString := (pos(suspect, container) <> 0);
+  end;
+
   function isValidFilename(filename: string): boolean;
   var
     i: integer;
@@ -113,11 +118,6 @@ type
       parametersAsString := parametersAsString + ' ' + ParamStr(i);
     end;
     getParametersAsString := parametersAsString;
-  end;
-
-  function containsCharInString(suspect: char; container: string): boolean;
-  begin
-    containsCharInString := (pos(suspect, container) <> 0);
   end;
 
   function hasExpectedSwitches(): boolean;
