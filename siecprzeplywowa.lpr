@@ -39,7 +39,63 @@ type
     hasNextNode := listOfNodes.nextNode <> nil;
   end;
 
+  function containsExpectedParametersCount(): boolean;
+  const
+    EXPECTED_PARAMETERS_COUNT = 8;
+  begin
+    containsExpectedParametersCount := Paramcount = EXPECTED_PARAMETERS_COUNT;
+  end;
+
+  function getParametersAsString(): string;
+  var
+    parametersAsString: string = '';
+    i: integer;
+  begin
+    for i := 1 to Paramcount do
+    begin
+      parametersAsString := parametersAsString + ' ' + ParamStr(i);
+    end;
+    getParametersAsString := parametersAsString;
+  end;
+
+  function containsCharInString(suspect: char; container: string): boolean;
+  begin
+    containsCharInString := (pos(suspect, container) = 0);
+  end;
+
+  function hasExpectedSwitches(): boolean;
+  var
+    i: integer;
+    parametersString: string;
+    expectedSwitchs: array[1..4] of char = ('i', 'o', 's', 'k');
+    containsAllSwitches: boolean = True;
+  begin
+    parametersString := getParametersAsString();
+    for i := 1 to High(expectedSwitchs) do
+    begin
+      if containsCharInString(expectedSwitchs[i], parametersString) then
+      begin
+        containsAllSwitches := False;
+        break;
+      end;
+    end;
+    hasExpectedSwitches := containsAllSwitches;
+  end;
+
+  function valuesAreSetCorrectly(): boolean;
+  begin
+  end;
+
+  function areParametersSettedCorrectly(): boolean;
+  begin
+    areParametersSettedCorrectly := containsExpectedParametersCount() and hasExpectedSwitches() and
+      valuesAreSetCorrectly();
+  end;
+
 begin
-  writeln('Hello World!');
+  writeln('TESTS RESULTS:');
+  writeln('containsExpectedParametersCount() resuled: ', containsExpectedParametersCount());
+  writeln('hasExpectedSwitches() resuled: ', hasExpectedSwitches());
+  writeln('Hit Enter to exit.');
   readln();
 end.
