@@ -72,11 +72,11 @@ type
     getParametrizedEndNode := getValueOfParameter('-k');
   end;
 
-  function containsExpectedParametersCount(): boolean;
+  function hasExpectedParametersCount(): boolean;
   const
     EXPECTED_PARAMETERS_COUNT = 8;
   begin
-    containsExpectedParametersCount := Paramcount = EXPECTED_PARAMETERS_COUNT;
+    hasExpectedParametersCount := Paramcount = EXPECTED_PARAMETERS_COUNT;
   end;
 
   function getParametersAsString(): string;
@@ -125,26 +125,26 @@ type
     isAnExistingFile := FileExists(filePath);
   end;
 
-  function areParametrizedValuesSetCorrectly(): boolean;
+  function hasParametrizedValuesSetCorrectly(): boolean;
   begin
-    areParametrizedValuesSetCorrectly := isAnExistingFile(getParametrizedInputFilePath()) and
+    hasParametrizedValuesSetCorrectly := isAnExistingFile(getParametrizedInputFilePath()) and
       isValidFilename(getParametrizedOutputFileName());
   end;
 
-  function areParametersSetCorrectly(): boolean;
+  function hasParametersSetCorrectly(): boolean;
   begin
-    areParametersSetCorrectly := containsExpectedParametersCount() and hasExpectedSwitches() and
-      areParametrizedValuesSetCorrectly();
+    hasParametersSetCorrectly := hasExpectedParametersCount() and hasExpectedSwitches() and
+      hasParametrizedValuesSetCorrectly();
   end;
 
 begin
   writeln('TESTS RESULTS:');
   writeln;
   writeln('PARAMETERS:');
-  writeln('areParametersSetCorrectly() resulted: ', areParametersSetCorrectly());
-  writeln('containsExpectedParametersCount() resulted: ', containsExpectedParametersCount());
+  writeln('hasParametersSetCorrectly() resulted: ', hasParametersSetCorrectly());
+  writeln('hasExpectedParametersCount() resulted: ', hasExpectedParametersCount());
   writeln('hasExpectedSwitches() resulted: ', hasExpectedSwitches());
-  writeln('areValuesSetCorrectly() resulted: ', areParametrizedValuesSetCorrectly());
+  writeln('hasValuesSetCorrectly() resulted: ', hasParametrizedValuesSetCorrectly());
   writeln('isAnExistingFile(getParametrizedInputFilePath()) resulted: ', isAnExistingFile(
     getParametrizedInputFilePath()));
   writeln('isValidFilename(getParametrizedOutputFileName()) resulted: ', isValidFilename(
