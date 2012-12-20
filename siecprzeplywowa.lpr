@@ -39,6 +39,63 @@ type
     hasNextNode := listOfNodes.nextNode <> nil;
   end;
 
+  function getValueOfParameter(parameter: string): string;
+  var
+    i: integer;
+  begin
+    for i := 1 to Paramcount - 1 do
+      if parameter = ParamStr(i) then
+      begin
+        getValueOfParameter := ParamStr(i + 1);
+        break;
+      end;
+  end;
+
+  function getParametrizedInputFilePath(): string;
+  begin
+    getParametrizedInputFilePath := getValueOfParameter('-i');
+  end;
+
+  function getParametrizedOutputFileName(): string;
+  begin
+    getParametrizedOutputFileName := getValueOfParameter('-o');
+  end;
+
+  function getParametrizedStartNode(): string;
+  begin
+    getParametrizedStartNode := getValueOfParameter('-s');
+  end;
+
+  function getParametrizedEndNode(): string;
+  begin
+    getParametrizedEndNode := getValueOfParameter('-k');
+  end;
+
+  function isValidFilename(filename: string): boolean;
+  var
+    i: integer;
+    illeagalCharacters: array[1..9] of char = ('*', ':', '?', '"', '<', '>', '|', '/', '\');
+  begin
+    isValidFilename := True;
+    for i := 1 to High(illeagalCharacters) do
+      if containsCharInString(illeagalCharacters[i], filename) then
+      begin
+        isValidFilename := False;
+        break;
+      end;
+  end;
+
+  function isAnExistingFile(filePath: string): boolean;
+  begin
+    isAnExistingFile := FileExists(filePath);
+  end;
+
+  function areParametrizedValuesSetCorrectly(): boolean;
+  begin
+    areParametrizedValuesSetCorrectly := isAnExistingFile(getParametrizedInputFilePath()) and
+      isValidFilename(getParametrizedOutputFileName());
+  end;
+
   function containsExpectedParametersCount(): boolean;
   const
     EXPECTED_PARAMETERS_COUNT = 8;
@@ -72,78 +129,17 @@ type
   begin
     parametersString := getParametersAsString();
     for i := 1 to High(expectedSwitches) do
-    begin
       if not containsCharInString(expectedSwitches[i], parametersString) then
       begin
         containsAllSwitches := False;
         break;
       end;
-    end;
     hasExpectedSwitches := containsAllSwitches;
   end;
 
-  function getValueOfParameter(parameter: string): string;
-  var
-    i: integer;
+  function areParametersSetCorrectly(): boolean;
   begin
-    for i := 1 to Paramcount - 1 do
-      if parameter = ParamStr(i) then
-      begin
-        getValueOfParameter := ParamStr(i + 1);
-        break;
-      end;
-  end;
-
-  function getParametrizedInputFilePath(): string;
-  begin
-    getParametrizedInputFilePath := getValueOfParameter('-i');
-  end;
-
-  function getParametrizedOutputFileName(): string;
-  begin
-    getParametrizedOutputFileName := getValueOfParameter('-o');
-  end;
-
-  function getParametrizedStartNode(): string;
-  begin
-    getParametrizedStartNode := getValueOfParameter('-s');
-  end;
-
-  function getParametrizedEndNode(): string;
-  begin
-    getParametrizedEndNode := getValueOfParameter('-k');
-  end;
-
-  function isAnExistingFile(filePath: string): boolean;
-  begin
-    isAnExistingFile := FileExists(filePath);
-  end;
-
-  function isValidFilename(filename: string): boolean;
-  var
-    i: integer;
-    illeagalCharacters: array[1..9] of char = ('*', ':', '?', '"', '<', '>', '|', '/', '\');
-  begin
-    isValidFilename := True;
-    for i := 1 to High(illeagalCharacters) do
-    begin
-      if containsCharInString(illeagalCharacters[i], filename) then
-      begin
-        isValidFilename := False;
-        break;
-      end;
-    end;
-  end;
-
-  function areParametrizedValuesSetCorrectlymich(): boolean;
-  begin
-    areParametrizedValuesSetCorrectly := isAnExistingFile(getParametrizedInputFilePath()) and
-      isValidFilename(getParametrizedOutputFileName());
-  end;
-
-  function areParametersSettedCorrectly(): boolean;
-  begin
-    areParametersSettedCorrectly := containsExpectedParametersCount() and hasExpectedSwitches() and
+    areParametersSetCorrectly := containsExpectedParametersCount() and hasExpectedSwitches() and
       areParametrizedValuesSetCorrectly();
   end;
 
@@ -151,7 +147,7 @@ begin
   writeln('TESTS RESULTS:');
   writeln('containsExpectedParametersCount() resulted: ', containsExpectedParametersCount());
   writeln('hasExpectedSwitches() resulted: ', hasExpectedSwitches());
-  writeln('areParametersSettedCorrectly() resulted: ', areParametersSettedCorrectly());
+  writeln('areParametersSettedCorrectly() resulted: ', areParametersSetCorrectly());
   writeln('valuesAreSetCorrectly() resulted: ', areParametrizedValuesSetCorrectly());
   writeln('isAnExistingFile(getParametrizedInputFilePath()) resulted: ', isAnExistingFile(
     getParametrizedInputFilePath()));
