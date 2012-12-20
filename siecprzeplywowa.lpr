@@ -135,7 +135,7 @@ type
     end;
   end;
 
-  function areParametrizedValuesSetCorrectlymich(): boolean;
+  function areParametrizedValuesSetCorrectly(): boolean;
   begin
     areParametrizedValuesSetCorrectly := isAnExistingFile(getParametrizedInputFilePath()) and
       isValidFilename(getParametrizedOutputFileName());
