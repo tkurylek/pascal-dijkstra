@@ -129,7 +129,7 @@ type
     begin
       if containsCharInString(illeagalCharacters[i], filename) then
       begin
-        isValidFilename := True;
+        isValidFilename := False;
         break;
       end;
     end;
