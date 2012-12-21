@@ -26,65 +26,61 @@ type
   var
     buildedNode: Node;
   begin
-    buildedNode.id := id;
-    SetLength(buildedNode.edges, edgesCount);
-    createNode := @buildedNode;
+    new(createNode);
+    createNode^.id := id;
+    SetLength(createNode^.edges, edgesCount);
   end;
 
 type
-  NodesList = record
-    currentNode: NodePointer;
-    nextNode: NodePointer;
+  NodesLinkedListPointer = ^NodesLinkedList;
+
+  NodesLinkedList = record
+    node: NodePointer;
+    nextCell: NodesLinkedListPointer;
   end;
 
-  function hasNextNode(listOfNodes: NodesList): boolean;
+  function hasNextNode(listOfNodes: NodesLinkedListPointer): boolean;
   begin
-    hasNextNode := listOfNodes.nextNode <> nil;
+    hasNextNode := listOfNodes^.nextCell <> nil;
   end;
 
-  function getValueOfParameter(parameter: string): string;
+  function hasExpectedCommandLineOptionsCount(): boolean;
+  const
+    EXPECTED_FLAGS_COUNT = 4;
+    EXPECTED_FLAGS_ARGUMENTS_COUNT = 4;
+    EXPECTED_OPTIONS_COUNT = EXPECTED_FLAGS_COUNT + EXPECTED_FLAGS_ARGUMENTS_COUNT;
+  begin
+    hasExpectedCommandLineOptionsCount := Paramcount = EXPECTED_OPTIONS_COUNT;
+  end;
+
+  function getArgumentByFlag(flag: string): string;
   begin
     for i := 1 to Paramcount - 1 do
-      if parameter = ParamStr(i) then
+      if flag = ParamStr(i) then
       begin
-        getValueOfParameter := ParamStr(i + 1);
+        getArgumentByFlag := ParamStr(i + 1);
         break;
       end;
   end;
 
-  function getParametrizedInputFilePath(): string;
+  function getInputFilePath(): string;
   begin
-    getParametrizedInputFilePath := getValueOfParameter('-i');
+    getInputFilePath := getArgumentByFlag('-i');
   end;
 
-  function getParametrizedOutputFileName(): string;
+  function getOutputFileName(): string;
   begin
-    getParametrizedOutputFileName := getValueOfParameter('-o');
+    getOutputFileName := getArgumentByFlag('-o');
   end;
 
-  function getParametrizedStartNode(): string;
+  function getStartNodeId(): integer;
   begin
-    getParametrizedStartNode := getValueOfParameter('-s');
+    val(getArgumentByFlag('-s'), getStartNodeId);
   end;
 
-  function getParametrizedEndNode(): string;
+  function getEndNodeId(): integer;
   begin
-    getParametrizedEndNode := getValueOfParameter('-k');
-  end;
-
-  function hasExpectedParametersCount(): boolean;
-  const
-    EXPECTED_PARAMETERS_COUNT = 8;
-  begin
-    hasExpectedParametersCount := Paramcount = EXPECTED_PARAMETERS_COUNT;
-  end;
-
-  function getParametersAsString(): string;
-  begin
-    for i := 1 to Paramcount do
-    begin
-      getParametersAsString := getParametersAsString + ' ' + ParamStr(i);
-    end;
+    val(getArgumentByFlag('-k'), getEndNodeId);
   end;
 
   function containsCharInString(suspect: char; container: string): boolean;
@@ -92,17 +88,28 @@ type
     containsCharInString := pos(suspect, container) <> 0;
   end;
 
-  function hasExpectedSwitches(): boolean;
-  var
-    parameters: string;
-    expectedSwitches: array[1..4] of char = ('i', 'o', 's', 'k');
+  function containsCharInStringCaseInsensitively(suspect: char; container: string): boolean;
   begin
-    hasExpectedSwitches := True;
-    parameters := getParametersAsString();
-    for i := 1 to High(expectedSwitches) do
-      if not containsCharInString(expectedSwitches[i], parameters) then
+    containsCharInStringCaseInsensitively := containsCharInString(LowerCase(suspect), LowerCase(container));
+  end;
+
+  function getCommandLineOptionsAsString(): string;
+  begin
+    for i := 1 to Paramcount do
+      getCommandLineOptionsAsString := getCommandLineOptionsAsString + ' ' + ParamStr(i);
+  end;
+
+  function hasExpectedCommandLineFlags(): boolean;
+  var
+    commandLineOptions: string;
+    expectedFlags: array[1..4] of char = ('i', 'o', 's', 'k');
+  begin
+    hasExpectedCommandLineFlags := True;
+    commandLineOptions := getCommandLineOptionsAsString();
+    for i := 1 to High(expectedFlags) do
+      if not containsCharInStringCaseInsensitively(expectedFlags[i], commandLineOptions) then
       begin
-        hasExpectedSwitches := False;
+        hasExpectedCommandLineFlags := False;
         break;
       end;
   end;
@@ -125,30 +132,56 @@ type
     isAnExistingFile := FileExists(filePath);
   end;
 
-  function hasParametrizedValuesSetCorrectly(): boolean;
+  function countFileLines(filePath: string): integer;
+  var
+    fileContent: Text;
   begin
-    hasParametrizedValuesSetCorrectly := isAnExistingFile(getParametrizedInputFilePath()) and
-      isValidFilename(getParametrizedOutputFileName());
+    countFileLines := 0;
+    Assign(fileContent, filePath);
+    Reset(fileContent);
+    repeat
+      ReadLn(fileContent);
+      Inc(countFileLines);
+    until EOF(fileContent);
+    Close(fileContent);
   end;
 
-  function hasParametersSetCorrectly(): boolean;
+  function getNodesCount(): integer;
   begin
-    hasParametersSetCorrectly := hasExpectedParametersCount() and hasExpectedSwitches() and
-      hasParametrizedValuesSetCorrectly();
+    getNodesCount := countFileLines(getInputFilePath());
+  end;
+
+  function isPointingToAnExistingNode(nodeId: integer): boolean;
+  begin
+    isPointingToAnExistingNode := nodeId <= getNodesCount();
+  end;
+
+  function hasCommandLineFlagsArgumentsSetCorrectly(): boolean;
+  begin
+    hasCommandLineFlagsArgumentsSetCorrectly :=
+      isAnExistingFile(getInputFilePath()) and isValidFilename(getOutputFileName()) and
+      isPointingToAnExistingNode(getStartNodeId()) and isPointingToAnExistingNode(getEndNodeId());
+  end;
+
+  function hasCommandLineOptionsSetCorrectly(): boolean;
+  begin
+    hasCommandLineOptionsSetCorrectly :=
+      hasExpectedCommandLineOptionsCount() and hasExpectedCommandLineFlags() and
+      hasCommandLineFlagsArgumentsSetCorrectly();
+  end;
+
+  procedure appendNodesLinkedList(var nodesLinkedListHead: NodesLinkedListPointer; nodeToBeAdded: NodePointer);
+  var
+    nodesLinkedListElement: NodesLinkedListPointer = nil;
+  begin
+    new(nodesLinkedListElement);
+    nodesLinkedListElement^.node := nodeToBeAdded;
+    nodesLinkedListElement^.nextCell := nodesLinkedListHead;
+    nodesLinkedListHead := nodesLinkedListElement;
   end;
 
 begin
-  writeln('TESTS RESULTS:');
-  writeln;
-  writeln('PARAMETERS:');
-  writeln('hasParametersSetCorrectly() resulted: ', hasParametersSetCorrectly());
-  writeln('hasExpectedParametersCount() resulted: ', hasExpectedParametersCount());
-  writeln('hasExpectedSwitches() resulted: ', hasExpectedSwitches());
-  writeln('hasValuesSetCorrectly() resulted: ', hasParametrizedValuesSetCorrectly());
-  writeln('isAnExistingFile(getParametrizedInputFilePath()) resulted: ', isAnExistingFile(
-    getParametrizedInputFilePath()));
-  writeln('isValidFilename(getParametrizedOutputFileName()) resulted: ', isValidFilename(
-    getParametrizedOutputFileName()));
+  writeln('hasCommandLineOptionsSetCorrectly() : ', hasCommandLineOptionsSetCorrectly());
   writeln;
   writeln('Hit Enter to exit.');
   readln();
