@@ -5,6 +5,10 @@ uses
 
 const
   INFINITY = High(integer);
+  INPUT_FILE_FLAG = '-i';
+  OUTPUT_FILE_FLAG = '-o';
+  START_NODE_FLAG = '-s';
+  END_NODE_FLAG = '-k';
 
 var
   i: integer;
@@ -22,6 +26,13 @@ type
     edges: array of Edge;
   end;
 
+  NodesLinkedListPointer = ^NodesLinkedList;
+
+  NodesLinkedList = record
+    node: NodePointer;
+    nextElement: NodesLinkedListPointer;
+  end;
+
   function createNode(id: integer; edgesCount: integer): NodePointer;
   var
     buildedNode: Node;
@@ -31,17 +42,9 @@ type
     SetLength(createNode^.edges, edgesCount);
   end;
 
-type
-  NodesLinkedListPointer = ^NodesLinkedList;
-
-  NodesLinkedList = record
-    node: NodePointer;
-    nextCell: NodesLinkedListPointer;
-  end;
-
   function hasNextNode(listOfNodes: NodesLinkedListPointer): boolean;
   begin
-    hasNextNode := listOfNodes^.nextCell <> nil;
+    hasNextNode := listOfNodes^.nextElement^.node <> nil;
   end;
 
   function hasExpectedCommandLineOptionsCount(): boolean;
@@ -63,24 +66,29 @@ type
       end;
   end;
 
-  function getInputFilePath(): string;
+  function getValueOf(anyString: string): integer;
   begin
-    getInputFilePath := getArgumentByFlag('-i');
-  end;
-
-  function getOutputFileName(): string;
-  begin
-    getOutputFileName := getArgumentByFlag('-o');
+    val(anyString, getValueOf);
   end;
 
   function getStartNodeId(): integer;
   begin
-    val(getArgumentByFlag('-s'), getStartNodeId);
+    getStartNodeId := getValueOf(getArgumentByFlag(START_NODE_FLAG));
   end;
 
   function getEndNodeId(): integer;
   begin
-    val(getArgumentByFlag('-k'), getEndNodeId);
+    getEndNodeId := getValueOf(getArgumentByFlag(END_NODE_FLAG));
+  end;
+
+  function getInputFilePath(): string;
+  begin
+    getInputFilePath := getArgumentByFlag(INPUT_FILE_FLAG);
+  end;
+
+  function getOutputFileName(): string;
+  begin
+    getOutputFileName := getArgumentByFlag(OUTPUT_FILE_FLAG);
   end;
 
   function containsCharInString(suspect: char; container: string): boolean;
@@ -114,6 +122,11 @@ type
       end;
   end;
 
+  function isAnExistingFile(filePath: string): boolean;
+  begin
+    isAnExistingFile := FileExists(filePath);
+  end;
+
   function isValidFilename(filename: string): boolean;
   var
     illegalCharacters: array[1..9] of char = ('*', ':', '?', '"', '<', '>', '|', '/', '\');
@@ -125,11 +138,6 @@ type
         isValidFilename := False;
         break;
       end;
-  end;
-
-  function isAnExistingFile(filePath: string): boolean;
-  begin
-    isAnExistingFile := FileExists(filePath);
   end;
 
   function countFileLines(filePath: string): integer;
@@ -176,7 +184,7 @@ type
   begin
     new(nodesLinkedListElement);
     nodesLinkedListElement^.node := nodeToBeAdded;
-    nodesLinkedListElement^.nextCell := nodesLinkedListHead;
+    nodesLinkedListElement^.nextElement := nodesLinkedListHead;
     nodesLinkedListHead := nodesLinkedListElement;
   end;
 
