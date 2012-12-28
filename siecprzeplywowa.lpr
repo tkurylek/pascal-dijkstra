@@ -34,8 +34,6 @@ type
   end;
 
   function createNode(id: integer; edgesCount: integer): NodePointer;
-  var
-    buildedNode: Node;
   begin
     new(createNode);
     createNode^.id := id;
