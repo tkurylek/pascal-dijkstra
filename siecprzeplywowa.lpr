@@ -5,10 +5,16 @@ uses
 
 const
   INFINITY = High(integer);
+
   INPUT_FILE_FLAG = '-i';
   OUTPUT_FILE_FLAG = '-o';
   START_NODE_FLAG = '-s';
   END_NODE_FLAG = '-k';
+
+  SPACE = ' ';
+  DOUBLE_SPACE = SPACE + SPACE;
+  SEMICOLON = ';';
+  SEMICOLON_WITH_SPACE = SEMICOLON + SPACE;
 
 var
   i: integer;
@@ -120,12 +126,12 @@ type
   function hasExpectedCommandLineFlags(): boolean;
   var
     commandLineOptions: string;
-    expectedFlags: array[1..4] of string = ('-i ', '-o ', '-s ', '-k ');
+    expectedFlags: array[1..4] of string = (INPUT_FILE_FLAG, OUTPUT_FILE_FLAG, START_NODE_FLAG, END_NODE_FLAG);
   begin
     hasExpectedCommandLineFlags := True;
     commandLineOptions := getCommandLineOptionsAsString();
     for i := 1 to High(expectedFlags) do
-      if not containsSubstringInStringCaseInsensitively(expectedFlags[i], commandLineOptions) then
+      if not containsSubstringInStringCaseInsensitively(expectedFlags[i] + SPACE, commandLineOptions) then
       begin
         writeln('Przelacznik "', expectedFlags[i], '" nie zostal uzyty.');
         hasExpectedCommandLineFlags := False;
@@ -183,9 +189,9 @@ type
     else if not isValidFilename(getOutputFileName()) then
       writeln('Podana nazwa "', getOutputFileName(), '" nie moze byc uzyta jako nazwa pliku.')
     else if not isPointingToAnExistingNode(getStartNodeId()) then
-      writeln('Wezel numer ', getStartNodeId(), ' nie moze byc uzyty jako startowy, bo nie istnieje.')
+      writeln('Wezel numer ', getStartNodeId(), ' nie moze byc uzyty jako startowy, bo nie zostal zadeklarowany.')
     else if not isPointingToAnExistingNode(getEndNodeId()) then
-      writeln('Wezel numer ', getEndNodeId(), ' nie moze byc uzyty jako koncowy, bo nie istnieje.')
+      writeln('Wezel numer ', getEndNodeId(), ' nie moze byc uzyty jako koncowy, bo nie zostal zadeklarowany.')
     else
       hasCommandLineFlagsArgumentsSetCorrectly := True;
   end;
@@ -287,21 +293,15 @@ type
   end;
 
   function removeMultipleSpaces(aString: string): string;
-  const
-    DOUBLE_SPACE = '  ';
-    SINGLE_SPACE = ' ';
   begin
     while containsSubstringInString(DOUBLE_SPACE, aString) do
-      aString := replaceAll(aString, DOUBLE_SPACE, SINGLE_SPACE);
+      aString := replaceAll(aString, DOUBLE_SPACE, SPACE);
     removeMultipleSpaces := aString;
   end;
 
   function removeSpacesAfterSemicolons(aString: string): string;
-  const
-    SPACE_AFTER_SEMICOLON = '; ';
-    SEMICOLON = ';';
   begin
-    removeSpacesAfterSemicolons := replaceAll(aString, SPACE_AFTER_SEMICOLON, SEMICOLON);
+    removeSpacesAfterSemicolons := replaceAll(aString, SEMICOLON_WITH_SPACE, SEMICOLON);
   end;
 
   function trimNodeDefinition(aString: string): string;
@@ -309,16 +309,47 @@ type
     trimNodeDefinition := removeSpacesAfterSemicolons(removeMultipleSpaces(aString));
   end;
 
-  function mocked_isUnderstandableNodeDefinition(nodeDefinition: string): boolean;
+  function isInteger(aString: string): boolean;
+  var
+    errorCode: integer;
+    integerValue: integer;
   begin
-    mocked_isUnderstandableNodeDefinition := True;
+    val(aString, integerValue, errorCode);
+    isInteger := errorCode = 0;
+  end;
+
+  function isUnderstandableNodeDefinition(nodeDefinition: string): boolean;
+  var
+    nodeConnection: string;
+    nodeConnections: arrayOfString;
+    nodeConnectionData: arrayOfString;
+    nodeId: integer = 1;
+  begin
+    isUnderstandableNodeDefinition := True;
+    nodeConnections := removeEmptyStrings(splitStringByChar(SEMICOLON, nodeDefinition));
+    for nodeConnection in nodeConnections do
+    begin
+      nodeConnectionData := removeEmptyStrings(splitStringByChar(SPACE, nodeConnection));
+      if length(nodeConnectionData) <> 2 then
+        writeln('Niezrozumiale polaczenie ', nodeId, ' wezla: "',
+          nodeConnection, '". Czy zapomniales srednika?')
+      else if not isInteger(nodeConnectionData[0]) then
+        writeln('Wezel ', nodeId, ' nie moze zostac polaczony z wezlem "', nodeConnectionData[0],
+          '". Identyfikatory wezlow musza byc liczba calkowita!')
+      else if not isInteger(nodeConnectionData[1]) then
+        writeln('Wezel ', nodeId, ' nie moze zostac polaczony z wezlem ', nodeConnectionData[0],
+          ' dystansem "', nodeConnectionData[1], '". Dystans miedzy wezlami musi byc liczba calkowita!')
+      else
+        Continue;
+      isUnderstandableNodeDefinition := False;
+      break;
+    end;
   end;
 
 var
   nodesLinkedListHead: NodesLinkedListPointer;
   nodeDefinition: string;
   nodeConnections: arrayOfString;
-  nodeId: integer = 1;
 
 begin
   if hasCommandLineOptionsSetCorrectly() then
@@ -326,15 +357,15 @@ begin
     for nodeDefinition in getNodesDefinitions() do
     begin
       nodeDefinition := trimNodeDefinition(nodeDefinition);
-      if not mocked_isUnderstandableNodeDefinition(nodeDefinition) then
+      if not isUnderstandableNodeDefinition(nodeDefinition) then
       begin
-        writeln('Blad. Niezrozumiala definicja ', nodeId, ' wezla: "', nodeDefinition, '"');
+        writeln('Przerwano. Niezrozumiala definicja wezla: "', nodeDefinition, '"');
         break;
       end;
-      nodeConnections := removeEmptyStrings(splitStringByChar(';', nodeDefinition));
-      Inc(nodeId);
+      nodeConnections := removeEmptyStrings(splitStringByChar(SEMICOLON, nodeDefinition));
     end;
   end;
+  writeln();
   writeln('Nacisnij enter aby zakonczyc.');
   readln();
 end.
