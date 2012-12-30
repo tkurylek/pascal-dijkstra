@@ -76,9 +76,9 @@ type
       end;
   end;
 
-  function getValueOf(anyString: string): integer;
+  function getValueOf(aString: string): integer;
   begin
-    val(anyString, getValueOf);
+    val(aString, getValueOf);
   end;
 
   function getStartNodeId(): integer;
@@ -107,26 +107,27 @@ type
       getCommandLineOptionsAsString := getCommandLineOptionsAsString + ' ' + ParamStr(i);
   end;
 
-  function containsCharInString(suspect: char; container: string): boolean;
+  function containsSubstringInString(aSubstring: string; aString: string): boolean;
   begin
-    containsCharInString := pos(suspect, container) <> 0;
+    containsSubstringInString := pos(aSubstring, aString) <> 0;
   end;
 
-  function containsCharInStringCaseInsensitively(suspect: char; container: string): boolean;
+  function containsSubstringInStringCaseInsensitively(aSubstring: string; aString: string): boolean;
   begin
-    containsCharInStringCaseInsensitively := containsCharInString(LowerCase(suspect), LowerCase(container));
+    containsSubstringInStringCaseInsensitively := containsSubstringInString(LowerCase(aSubstring), LowerCase(aString));
   end;
 
   function hasExpectedCommandLineFlags(): boolean;
   var
     commandLineOptions: string;
-    expectedFlags: array[1..4] of char = ('i', 'o', 's', 'k');
+    expectedFlags: array[1..4] of string = ('-i ', '-o ', '-s ', '-k ');
   begin
     hasExpectedCommandLineFlags := True;
     commandLineOptions := getCommandLineOptionsAsString();
     for i := 1 to High(expectedFlags) do
-      if not containsCharInStringCaseInsensitively(expectedFlags[i], commandLineOptions) then
+      if not containsSubstringInStringCaseInsensitively(expectedFlags[i], commandLineOptions) then
       begin
+        writeln('Przelacznik "', expectedFlags[i], '" nie zostal uzyty.');
         hasExpectedCommandLineFlags := False;
         break;
       end;
@@ -143,7 +144,7 @@ type
   begin
     isValidFilename := True;
     for i := 1 to High(illegalCharacters) do
-      if containsCharInString(illegalCharacters[i], filename) then
+      if containsSubstringInString(illegalCharacters[i], filename) then
       begin
         isValidFilename := False;
         break;
@@ -193,7 +194,7 @@ type
   begin
     hasCommandLineOptionsSetCorrectly := False;
     if not hasExpectedCommandLineOptionsCount() then
-      writeln('Przerwano. Nieoczekiwana ilosc lub bledna skladnia parametrow.')
+      writeln('Przerwano. Nieoczekiwana ilosc parametrow.')
     else if not hasExpectedCommandLineFlags() then
       writeln('Przerwano. Nie uzyto wszystkich oczekiwanych przelacznikow.')
     else if not hasCommandLineFlagsArgumentsSetCorrectly() then
@@ -202,11 +203,11 @@ type
       hasCommandLineOptionsSetCorrectly := True;
   end;
 
-  function deleteCharFromString(suspect: char; container: string): string;
+  function removeSubstringFromString(aSubstring: string; aString: string): string;
   begin
-    while containsCharInString(suspect, container) do
-      Delete(container, pos(suspect, container), 1);
-    deleteCharFromString := container;
+    while containsSubstringInString(aSubstring, aString) do
+      Delete(aString, pos(aSubstring, aString), Length(aSubstring));
+    removeSubstringFromString := aString;
   end;
 
   function countCharOccurrencesInString(suspect: char; container: string): integer;
@@ -255,19 +256,85 @@ type
   var
     aString: string;
   begin
-    i := 0;
     SetLength(removeEmptyStrings, Length(anArrayOfString) - countEmptyStringOccurrences(anArrayOfString));
+    i := 0;
     for aString in anArrayOfString do
       if not isEmpty(aString) then
       begin
         removeEmptyStrings[i] := aString;
+        Inc(i);
       end;
+  end;
+
+  function getNodesDefinitions(): arrayOfString;
+  var
+    fileContent: Text;
+  begin
+    SetLength(getNodesDefinitions, getNodesCount());
+    Assign(fileContent, getInputFilePath());
+    Reset(fileContent);
+    i := 0;
+    repeat
+      ReadLn(fileContent, getNodesDefinitions[i]);
+      Inc(i);
+    until EOF(fileContent);
+    Close(fileContent);
+  end;
+
+  function replaceAll(aString, replacedSubstring, replacingSubstring: string): string;
+  begin
+    replaceAll := StringReplace(aString, replacedSubstring, replacingSubstring, [rfReplaceAll, rfIgnoreCase]);
+  end;
+
+  function removeMultipleSpaces(aString: string): string;
+  const
+    DOUBLE_SPACE = '  ';
+    SINGLE_SPACE = ' ';
+  begin
+    while containsSubstringInString(DOUBLE_SPACE, aString) do
+      aString := replaceAll(aString, DOUBLE_SPACE, SINGLE_SPACE);
+    removeMultipleSpaces := aString;
+  end;
+
+  function removeSpacesAfterSemicolons(aString: string): string;
+  const
+    SPACE_AFTER_SEMICOLON = '; ';
+    SEMICOLON = ';';
+  begin
+    removeSpacesAfterSemicolons := replaceAll(aString, SPACE_AFTER_SEMICOLON, SEMICOLON);
+  end;
+
+  function trimNodeDefinition(aString: string): string;
+  begin
+    trimNodeDefinition := removeSpacesAfterSemicolons(removeMultipleSpaces(aString));
+  end;
+
+  function mocked_isUnderstandableNodeDefinition(nodeDefinition: string): boolean;
+  begin
+    mocked_isUnderstandableNodeDefinition := True;
   end;
 
 var
   nodesLinkedListHead: NodesLinkedListPointer;
+  nodeDefinition: string;
+  nodeConnections: arrayOfString;
+  nodeId: integer = 1;
 
 begin
+  if hasCommandLineOptionsSetCorrectly() then
+  begin
+    for nodeDefinition in getNodesDefinitions() do
+    begin
+      nodeDefinition := trimNodeDefinition(nodeDefinition);
+      if not mocked_isUnderstandableNodeDefinition(nodeDefinition) then
+      begin
+        writeln('Blad. Niezrozumiala definicja ', nodeId, ' wezla: "', nodeDefinition, '"');
+        break;
+      end;
+      nodeConnections := removeEmptyStrings(splitStringByChar(';', nodeDefinition));
+      Inc(nodeId);
+    end;
+  end;
   writeln('Nacisnij enter aby zakonczyc.');
   readln();
 end.
