@@ -16,9 +16,6 @@ const
   SEMICOLON = ';';
   SEMICOLON_WITH_SPACE = SEMICOLON + SPACE;
 
-var
-  i: integer;
-
 type
   arrayOfString = array of string;
 
@@ -40,6 +37,10 @@ type
     node: NodePointer;
     nextElement: NodesLinkedListPointer;
   end;
+
+var
+  i: integer;
+  nodesLinkedListHead: NodesLinkedListPointer;
 
   function createNode(id: integer; edgesCount: integer): NodePointer;
   begin
@@ -226,21 +227,17 @@ type
         Inc(countCharOccurrencesInString);
   end;
 
-  function splitStringByChar(separator: char; chain: string): arrayOfString;
+  function splitStringByChar(separator: char; aString: string): arrayOfString;
   var
     letter: char;
   begin
     i := 0;
-    SetLength(splitStringByChar, countCharOccurrencesInString(separator, chain) + 1);
-    for letter in chain do
-    begin
+    SetLength(splitStringByChar, countCharOccurrencesInString(separator, aString) + 1);
+    for letter in aString do
       if letter = separator then
         Inc(i)
       else
-      begin
         splitStringByChar[i] := splitStringByChar[i] + letter;
-      end;
-    end;
   end;
 
   function isEmpty(aString: string): boolean;
@@ -258,33 +255,18 @@ type
         Inc(countEmptyStringOccurrences);
   end;
 
-  function removeEmptyStrings(anArrayOfString: arrayOfString): arrayOfString;
+  function trimArray(anArrayOfString: arrayOfString): arrayOfString;
   var
     aString: string;
   begin
-    SetLength(removeEmptyStrings, Length(anArrayOfString) - countEmptyStringOccurrences(anArrayOfString));
+    SetLength(trimArray, Length(anArrayOfString) - countEmptyStringOccurrences(anArrayOfString));
     i := 0;
     for aString in anArrayOfString do
       if not isEmpty(aString) then
       begin
-        removeEmptyStrings[i] := aString;
+        trimArray[i] := aString;
         Inc(i);
       end;
-  end;
-
-  function getNodesDefinitions(): arrayOfString;
-  var
-    fileContent: Text;
-  begin
-    SetLength(getNodesDefinitions, getNodesCount());
-    Assign(fileContent, getInputFilePath());
-    Reset(fileContent);
-    i := 0;
-    repeat
-      ReadLn(fileContent, getNodesDefinitions[i]);
-      Inc(i);
-    until EOF(fileContent);
-    Close(fileContent);
   end;
 
   function replaceAll(aString, replacedSubstring, replacingSubstring: string): string;
@@ -309,6 +291,22 @@ type
     trimNodeDefinition := removeSpacesAfterSemicolons(removeMultipleSpaces(aString));
   end;
 
+  function getNodesDefinitions(): arrayOfString;
+  var
+    fileContent: Text;
+  begin
+    SetLength(getNodesDefinitions, getNodesCount());
+    Assign(fileContent, getInputFilePath());
+    Reset(fileContent);
+    i := 0;
+    repeat
+      ReadLn(fileContent, getNodesDefinitions[i]);
+      getNodesDefinitions[i] := trimNodeDefinition(getNodesDefinitions[i]);
+      Inc(i);
+    until EOF(fileContent);
+    Close(fileContent);
+  end;
+
   function isInteger(aString: string): boolean;
   var
     errorCode: integer;
@@ -318,27 +316,34 @@ type
     isInteger := errorCode = 0;
   end;
 
+  function getNodeConnections(nodeDefinition: string): arrayOfString;
+  begin
+    getNodeConnections := trimArray(splitStringByChar(SEMICOLON, nodeDefinition));
+  end;
+
   function isUnderstandableNodeDefinition(nodeDefinition: string): boolean;
   var
     nodeConnection: string;
-    nodeConnections: arrayOfString;
     nodeConnectionData: arrayOfString;
+    endNodeIdString: string;
+    distanceToEndNodeString: string;
     nodeId: integer = 1;
   begin
     isUnderstandableNodeDefinition := True;
-    nodeConnections := removeEmptyStrings(splitStringByChar(SEMICOLON, nodeDefinition));
-    for nodeConnection in nodeConnections do
+    for nodeConnection in getNodeConnections(nodeDefinition) do
     begin
-      nodeConnectionData := removeEmptyStrings(splitStringByChar(SPACE, nodeConnection));
+      nodeConnectionData := trimArray(splitStringByChar(SPACE, nodeConnection));
+      endNodeIdString := nodeConnectionData[0];
+      distanceToEndNodeString := nodeConnectionData[1];
       if length(nodeConnectionData) <> 2 then
         writeln('Niezrozumiale polaczenie ', nodeId, ' wezla: "',
-          nodeConnection, '". Czy zapomniales srednika?')
-      else if not isInteger(nodeConnectionData[0]) then
-        writeln('Wezel ', nodeId, ' nie moze zostac polaczony z wezlem "', nodeConnectionData[0],
+          nodeConnection, '". Niepoprawna ilosc parametrow.')
+      else if not isInteger(endNodeIdString) then
+        writeln('Wezel ', nodeId, ' nie moze zostac polaczony z wezlem "', endNodeIdString,
           '". Identyfikatory wezlow musza byc liczba calkowita!')
-      else if not isInteger(nodeConnectionData[1]) then
-        writeln('Wezel ', nodeId, ' nie moze zostac polaczony z wezlem ', nodeConnectionData[0],
-          ' dystansem "', nodeConnectionData[1], '". Dystans miedzy wezlami musi byc liczba calkowita!')
+      else if not isInteger(distanceToEndNodeString) then
+        writeln('Wezel ', nodeId, ' nie moze zostac polaczony z wezlem ', endNodeIdString,
+          ' dystansem "', distanceToEndNodeString, '". Dystans miedzy wezlami musi byc liczba calkowita!')
       else
         Continue;
       isUnderstandableNodeDefinition := False;
@@ -346,25 +351,112 @@ type
     end;
   end;
 
+  function createNodeByDefinition(nodeId: integer; nodeDefinition: string): NodePointer;
+  var
+    edgesSize: integer;
+  begin
+    edgesSize := Length(getNodeConnections(nodeDefinition));
+    createNodeByDefinition := createNode(nodeId, edgesSize);
+  end;
+
+  procedure createNodesByTheirDefinitions(var nodesLinkedListHead: NodesLinkedListPointer;
+    nodesDefinitions: arrayOfString);
+  var
+    nodeDefinition: string;
+    nodeId: integer = 1;
+  begin
+    for nodeDefinition in nodesDefinitions do
+    begin
+      appendNodesLinkedList(nodesLinkedListHead, createNodeByDefinition(nodeId, nodeDefinition));
+      Inc(nodeId);
+    end;
+  end;
+
+  function areUnderstandableNodesDefinitions(nodesDefinitions: arrayOfString): boolean;
+  var
+    nodeDefinition: string;
+  begin
+    areUnderstandableNodesDefinitions := True;
+    for nodeDefinition in nodesDefinitions do
+    begin
+      if not isUnderstandableNodeDefinition(nodeDefinition) then
+      begin
+        writeln('Przerwano. Niezrozumiala definicja wezla: "', nodeDefinition, '"');
+        areUnderstandableNodesDefinitions := False;
+        break;
+      end;
+    end;
+  end;
+
+  function findNodeById(nodesLinkedListHead: NodesLinkedListPointer; nodeId: integer): NodePointer;
+  begin
+    while nodesLinkedListHead <> nil do
+    begin
+      findNodeById := nil;
+      if nodesLinkedListHead^.node^.id = nodeId then
+      begin
+        findNodeById := nodesLinkedListHead^.node;
+        break;
+      end;
+      nodesLinkedListHead := nodesLinkedListHead^.nextElement;
+    end;
+  end;
+
+  procedure establishConnectionsForNode(aNode: node; nodeConnections: arrayOfString);
+  var
+    edgesIndex: integer;
+    nodeConnectionData: arrayOfString;
+    distanceToEndNode: integer;
+    endNodeId: integer;
+    nodeConnection: string;
+  begin
+    edgesIndex := 0;
+    for nodeConnection in nodeConnections do
+    begin
+      nodeConnectionData := trimArray(splitStringByChar(SPACE, nodeConnection));
+      endNodeId := getValueOf(nodeConnectionData[0]);
+      aNode.edges[edgesIndex].endNode := findNodeById(nodesLinkedListHead, endNodeId);
+
+      distanceToEndNode := getValueOf(nodeConnectionData[1]);
+      aNode.edges[edgesIndex].distanceToEndNode := distanceToEndNode;
+      Inc(edgesIndex);
+    end;
+  end;
+
+  procedure establishConnectionsBetweenNodesByTheirDefinition(var nodesLinkedListHead: NodesLinkedListPointer;
+    nodesDefinitions: arrayOfString);
+  var
+    nodesLinkedListHeadCopy: NodesLinkedListPointer;
+    nodeConnections: arrayOfString;
+    aNode: Node;
+    nodeDefinition: string;
+  begin
+    nodesLinkedListHeadCopy := nodesLinkedListHead;
+    while nodesLinkedListHeadCopy <> nil do
+    begin
+      aNode := nodesLinkedListHeadCopy^.node^;
+      nodeDefinition := nodesDefinitions[aNode.id - 1];
+      nodeConnections := getNodeConnections(nodeDefinition);
+      establishConnectionsForNode(aNode, nodeConnections);
+      nodesLinkedListHeadCopy := nodesLinkedListHeadCopy^.nextElement;
+    end;
+
+  end;
+
 var
-  nodesLinkedListHead: NodesLinkedListPointer;
-  nodeDefinition: string;
-  nodeConnections: arrayOfString;
+  nodesDefinitions: arrayOfString;
 
 begin
   if hasCommandLineOptionsSetCorrectly() then
   begin
-    for nodeDefinition in getNodesDefinitions() do
+    nodesDefinitions := getNodesDefinitions();
+    if areUnderstandableNodesDefinitions(nodesDefinitions) then
     begin
-      nodeDefinition := trimNodeDefinition(nodeDefinition);
-      if not isUnderstandableNodeDefinition(nodeDefinition) then
-      begin
-        writeln('Przerwano. Niezrozumiala definicja wezla: "', nodeDefinition, '"');
-        break;
-      end;
-      nodeConnections := removeEmptyStrings(splitStringByChar(SEMICOLON, nodeDefinition));
+      createNodesByTheirDefinitions(nodesLinkedListHead, nodesDefinitions);
+      establishConnectionsBetweenNodesByTheirDefinition(nodesLinkedListHead, nodesDefinitions);
     end;
   end;
+
   writeln();
   writeln('Nacisnij enter aby zakonczyc.');
   readln();
