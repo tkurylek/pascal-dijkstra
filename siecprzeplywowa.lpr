@@ -14,6 +14,8 @@ var
   i: integer;
 
 type
+  arrayOfString = array of string;
+
   NodePointer = ^Node;
 
   Edge = record
@@ -38,6 +40,16 @@ type
     new(createNode);
     createNode^.id := id;
     SetLength(createNode^.edges, edgesCount);
+  end;
+
+  procedure appendNodesLinkedList(var nodesLinkedListHead: NodesLinkedListPointer; nodeToBeAdded: NodePointer);
+  var
+    nodesLinkedListElement: NodesLinkedListPointer = nil;
+  begin
+    new(nodesLinkedListElement);
+    nodesLinkedListElement^.node := nodeToBeAdded;
+    nodesLinkedListElement^.nextElement := nodesLinkedListHead;
+    nodesLinkedListHead := nodesLinkedListElement;
   end;
 
   function hasNextNode(listOfNodes: NodesLinkedListPointer): boolean;
@@ -89,6 +101,12 @@ type
     getOutputFileName := getArgumentByFlag(OUTPUT_FILE_FLAG);
   end;
 
+  function getCommandLineOptionsAsString(): string;
+  begin
+    for i := 1 to Paramcount do
+      getCommandLineOptionsAsString := getCommandLineOptionsAsString + ' ' + ParamStr(i);
+  end;
+
   function containsCharInString(suspect: char; container: string): boolean;
   begin
     containsCharInString := pos(suspect, container) <> 0;
@@ -97,12 +115,6 @@ type
   function containsCharInStringCaseInsensitively(suspect: char; container: string): boolean;
   begin
     containsCharInStringCaseInsensitively := containsCharInString(LowerCase(suspect), LowerCase(container));
-  end;
-
-  function getCommandLineOptionsAsString(): string;
-  begin
-    for i := 1 to Paramcount do
-      getCommandLineOptionsAsString := getCommandLineOptionsAsString + ' ' + ParamStr(i);
   end;
 
   function hasExpectedCommandLineFlags(): boolean;
@@ -164,31 +176,98 @@ type
 
   function hasCommandLineFlagsArgumentsSetCorrectly(): boolean;
   begin
-    hasCommandLineFlagsArgumentsSetCorrectly :=
-      isAnExistingFile(getInputFilePath()) and isValidFilename(getOutputFileName()) and
-      isPointingToAnExistingNode(getStartNodeId()) and isPointingToAnExistingNode(getEndNodeId());
+    hasCommandLineFlagsArgumentsSetCorrectly := False;
+    if not isAnExistingFile(getInputFilePath()) then
+      writeln('Podana sciezka "', getInputFilePath(), '" wskazuje na nieistniejacy plik.')
+    else if not isValidFilename(getOutputFileName()) then
+      writeln('Podana nazwa "', getOutputFileName(), '" nie moze byc uzyta jako nazwa pliku.')
+    else if not isPointingToAnExistingNode(getStartNodeId()) then
+      writeln('Wezel numer ', getStartNodeId(), ' nie moze byc uzyty jako startowy, bo nie istnieje.')
+    else if not isPointingToAnExistingNode(getEndNodeId()) then
+      writeln('Wezel numer ', getEndNodeId(), ' nie moze byc uzyty jako koncowy, bo nie istnieje.')
+    else
+      hasCommandLineFlagsArgumentsSetCorrectly := True;
   end;
 
   function hasCommandLineOptionsSetCorrectly(): boolean;
   begin
-    hasCommandLineOptionsSetCorrectly :=
-      hasExpectedCommandLineOptionsCount() and hasExpectedCommandLineFlags() and
-      hasCommandLineFlagsArgumentsSetCorrectly();
+    hasCommandLineOptionsSetCorrectly := False;
+    if not hasExpectedCommandLineOptionsCount() then
+      writeln('Przerwano. Nieoczekiwana ilosc lub bledna skladnia parametrow.')
+    else if not hasExpectedCommandLineFlags() then
+      writeln('Przerwano. Nie uzyto wszystkich oczekiwanych przelacznikow.')
+    else if not hasCommandLineFlagsArgumentsSetCorrectly() then
+      writeln('Przerwano. Bledne ustawienie wartosci przelacznikow.')
+    else
+      hasCommandLineOptionsSetCorrectly := True;
   end;
 
-  procedure appendNodesLinkedList(var nodesLinkedListHead: NodesLinkedListPointer; nodeToBeAdded: NodePointer);
-  var
-    nodesLinkedListElement: NodesLinkedListPointer = nil;
+  function deleteCharFromString(suspect: char; container: string): string;
   begin
-    new(nodesLinkedListElement);
-    nodesLinkedListElement^.node := nodeToBeAdded;
-    nodesLinkedListElement^.nextElement := nodesLinkedListHead;
-    nodesLinkedListHead := nodesLinkedListElement;
+    while containsCharInString(suspect, container) do
+      Delete(container, pos(suspect, container), 1);
+    deleteCharFromString := container;
   end;
+
+  function countCharOccurrencesInString(suspect: char; container: string): integer;
+  var
+    c: char;
+  begin
+    countCharOccurrencesInString := 0;
+    for c in container do
+      if c = suspect then
+        Inc(countCharOccurrencesInString);
+  end;
+
+  function splitStringByChar(separator: char; chain: string): arrayOfString;
+  var
+    letter: char;
+  begin
+    i := 0;
+    SetLength(splitStringByChar, countCharOccurrencesInString(separator, chain) + 1);
+    for letter in chain do
+    begin
+      if letter = separator then
+        Inc(i)
+      else
+      begin
+        splitStringByChar[i] := splitStringByChar[i] + letter;
+      end;
+    end;
+  end;
+
+  function isEmpty(aString: string): boolean;
+  begin
+    isEmpty := Length(aString) = 0;
+  end;
+
+  function countEmptyStringOccurrences(anArrayOfString: arrayOfString): integer;
+  var
+    aString: string;
+  begin
+    countEmptyStringOccurrences := 0;
+    for aString in anArrayOfString do
+      if isEmpty(aString) then
+        Inc(countEmptyStringOccurrences);
+  end;
+
+  function removeEmptyStrings(anArrayOfString: arrayOfString): arrayOfString;
+  var
+    aString: string;
+  begin
+    i := 0;
+    SetLength(removeEmptyStrings, Length(anArrayOfString) - countEmptyStringOccurrences(anArrayOfString));
+    for aString in anArrayOfString do
+      if not isEmpty(aString) then
+      begin
+        removeEmptyStrings[i] := aString;
+      end;
+  end;
+
+var
+  nodesLinkedListHead: NodesLinkedListPointer;
 
 begin
-  writeln('hasCommandLineOptionsSetCorrectly() : ', hasCommandLineOptionsSetCorrectly());
-  writeln;
-  writeln('Hit Enter to exit.');
+  writeln('Nacisnij enter aby zakonczyc.');
   readln();
 end.
