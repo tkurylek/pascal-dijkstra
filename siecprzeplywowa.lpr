@@ -5,12 +5,10 @@ uses
 
 const
   INFINITY = High(integer);
-
   INPUT_FILE_FLAG = '-i';
   OUTPUT_FILE_FLAG = '-o';
   START_NODE_FLAG = '-s';
   END_NODE_FLAG = '-k';
-
   SPACE = ' ';
   DOUBLE_SPACE = SPACE + SPACE;
   SEMICOLON = ';';
@@ -40,23 +38,13 @@ type
 
 var
   i: integer;
-  nodesLinkedListHead: NodesLinkedListPointer;
+  nodesLinkedListHead: NodesLinkedListPointer = nil;
 
   function createNode(id: integer; edgesCount: integer): NodePointer;
   begin
     new(createNode);
     createNode^.id := id;
     SetLength(createNode^.edges, edgesCount);
-  end;
-
-  procedure appendNodesLinkedList(var nodesLinkedListHead: NodesLinkedListPointer; nodeToBeAdded: NodePointer);
-  var
-    nodesLinkedListElement: NodesLinkedListPointer = nil;
-  begin
-    new(nodesLinkedListElement);
-    nodesLinkedListElement^.node := nodeToBeAdded;
-    nodesLinkedListElement^.nextElement := nodesLinkedListHead;
-    nodesLinkedListHead := nodesLinkedListElement;
   end;
 
   function hasNextNode(listOfNodes: NodesLinkedListPointer): boolean;
@@ -108,12 +96,6 @@ var
     getOutputFileName := getArgumentByFlag(OUTPUT_FILE_FLAG);
   end;
 
-  function getCommandLineOptionsAsString(): string;
-  begin
-    for i := 1 to Paramcount do
-      getCommandLineOptionsAsString := getCommandLineOptionsAsString + ' ' + ParamStr(i);
-  end;
-
   function containsSubstringInString(aSubstring: string; aString: string): boolean;
   begin
     containsSubstringInString := pos(aSubstring, aString) <> 0;
@@ -122,6 +104,12 @@ var
   function containsSubstringInStringCaseInsensitively(aSubstring: string; aString: string): boolean;
   begin
     containsSubstringInStringCaseInsensitively := containsSubstringInString(LowerCase(aSubstring), LowerCase(aString));
+  end;
+
+  function getCommandLineOptionsAsString(): string;
+  begin
+    for i := 1 to Paramcount do
+      getCommandLineOptionsAsString := getCommandLineOptionsAsString + ' ' + ParamStr(i);
   end;
 
   function hasExpectedCommandLineFlags(): boolean;
@@ -210,36 +198,6 @@ var
       hasCommandLineOptionsSetCorrectly := True;
   end;
 
-  function removeSubstringFromString(aSubstring: string; aString: string): string;
-  begin
-    while containsSubstringInString(aSubstring, aString) do
-      Delete(aString, pos(aSubstring, aString), Length(aSubstring));
-    removeSubstringFromString := aString;
-  end;
-
-  function countCharOccurrencesInString(suspect: char; container: string): integer;
-  var
-    c: char;
-  begin
-    countCharOccurrencesInString := 0;
-    for c in container do
-      if c = suspect then
-        Inc(countCharOccurrencesInString);
-  end;
-
-  function splitStringByChar(separator: char; aString: string): arrayOfString;
-  var
-    letter: char;
-  begin
-    i := 0;
-    SetLength(splitStringByChar, countCharOccurrencesInString(separator, aString) + 1);
-    for letter in aString do
-      if letter = separator then
-        Inc(i)
-      else
-        splitStringByChar[i] := splitStringByChar[i] + letter;
-  end;
-
   function isEmpty(aString: string): boolean;
   begin
     isEmpty := Length(aString) = 0;
@@ -307,18 +265,46 @@ var
     Close(fileContent);
   end;
 
-  function isInteger(aString: string): boolean;
+  function isAnInteger(aString: string): boolean;
   var
     errorCode: integer;
-    integerValue: integer;
+    assignedButNeverUsedIntegerValue: integer;
   begin
-    val(aString, integerValue, errorCode);
-    isInteger := errorCode = 0;
+    val(aString, assignedButNeverUsedIntegerValue, errorCode);
+    isAnInteger := errorCode = 0;
+  end;
+
+  function countCharOccurrencesInString(suspect: char; container: string): integer;
+  var
+    c: char;
+  begin
+    countCharOccurrencesInString := 0;
+    for c in container do
+      if c = suspect then
+        Inc(countCharOccurrencesInString);
+  end;
+
+  function splitStringByChar(separator: char; aString: string): arrayOfString;
+  var
+    letter: char;
+  begin
+    i := 0;
+    SetLength(splitStringByChar, countCharOccurrencesInString(separator, aString) + 1);
+    for letter in aString do
+      if letter = separator then
+        Inc(i)
+      else
+        splitStringByChar[i] := splitStringByChar[i] + letter;
   end;
 
   function getNodeConnections(nodeDefinition: string): arrayOfString;
   begin
     getNodeConnections := trimArray(splitStringByChar(SEMICOLON, nodeDefinition));
+  end;
+
+  function getNodeConnectionData(nodeConnection: string): arrayOfString;
+  begin
+    getNodeConnectionData := trimArray(splitStringByChar(SPACE, nodeConnection));
   end;
 
   function isUnderstandableNodeDefinition(nodeDefinition: string): boolean;
@@ -332,43 +318,22 @@ var
     isUnderstandableNodeDefinition := True;
     for nodeConnection in getNodeConnections(nodeDefinition) do
     begin
-      nodeConnectionData := trimArray(splitStringByChar(SPACE, nodeConnection));
+      nodeConnectionData := getNodeConnectionData(nodeConnection);
       endNodeIdString := nodeConnectionData[0];
       distanceToEndNodeString := nodeConnectionData[1];
       if length(nodeConnectionData) <> 2 then
         writeln('Niezrozumiale polaczenie ', nodeId, ' wezla: "',
           nodeConnection, '". Niepoprawna ilosc parametrow.')
-      else if not isInteger(endNodeIdString) then
+      else if not isAnInteger(endNodeIdString) then
         writeln('Wezel ', nodeId, ' nie moze zostac polaczony z wezlem "', endNodeIdString,
           '". Identyfikatory wezlow musza byc liczba calkowita!')
-      else if not isInteger(distanceToEndNodeString) then
+      else if not isAnInteger(distanceToEndNodeString) then
         writeln('Wezel ', nodeId, ' nie moze zostac polaczony z wezlem ', endNodeIdString,
           ' dystansem "', distanceToEndNodeString, '". Dystans miedzy wezlami musi byc liczba calkowita!')
       else
         Continue;
       isUnderstandableNodeDefinition := False;
       break;
-    end;
-  end;
-
-  function createNodeByDefinition(nodeId: integer; nodeDefinition: string): NodePointer;
-  var
-    edgesSize: integer;
-  begin
-    edgesSize := Length(getNodeConnections(nodeDefinition));
-    createNodeByDefinition := createNode(nodeId, edgesSize);
-  end;
-
-  procedure createNodesByTheirDefinitions(var nodesLinkedListHead: NodesLinkedListPointer;
-    nodesDefinitions: arrayOfString);
-  var
-    nodeDefinition: string;
-    nodeId: integer = 1;
-  begin
-    for nodeDefinition in nodesDefinitions do
-    begin
-      appendNodesLinkedList(nodesLinkedListHead, createNodeByDefinition(nodeId, nodeDefinition));
-      Inc(nodeId);
     end;
   end;
 
@@ -388,59 +353,99 @@ var
     end;
   end;
 
-  function findNodeById(nodesLinkedListHead: NodesLinkedListPointer; nodeId: integer): NodePointer;
+  function createNodeByDefinition(nodeId: integer; nodeDefinition: string): NodePointer;
+  var
+    edgesSize: integer;
   begin
-    while nodesLinkedListHead <> nil do
+    edgesSize := Length(getNodeConnections(nodeDefinition));
+    createNodeByDefinition := createNode(nodeId, edgesSize);
+  end;
+
+  procedure appendNodesLinkedList(var nodesLinkedListHead: NodesLinkedListPointer; nodeToBeAdded: NodePointer);
+  var
+    nodesLinkedListElement: NodesLinkedListPointer = nil;
+  begin
+    new(nodesLinkedListElement);
+    nodesLinkedListElement^.node := nodeToBeAdded;
+    nodesLinkedListElement^.nextElement := nodesLinkedListHead;
+    nodesLinkedListHead := nodesLinkedListElement;
+  end;
+
+  procedure createNodesInListByTheirDefinitions(var nodesLinkedListHead: NodesLinkedListPointer;
+    nodesDefinitions: arrayOfString);
+  var
+    nodeDefinition: string;
+    nodeId: integer = 1;
+  begin
+    for nodeDefinition in nodesDefinitions do
     begin
-      findNodeById := nil;
-      if nodesLinkedListHead^.node^.id = nodeId then
-      begin
-        findNodeById := nodesLinkedListHead^.node;
-        break;
-      end;
-      nodesLinkedListHead := nodesLinkedListHead^.nextElement;
+      appendNodesLinkedList(nodesLinkedListHead, createNodeByDefinition(nodeId, nodeDefinition));
+      Inc(nodeId);
     end;
   end;
 
-  procedure establishConnectionsForNode(aNode: node; nodeConnections: arrayOfString);
+  function findNodeById(nodesLinkedListHead: NodesLinkedListPointer; nodeId: integer): NodePointer;
+  var
+    nodesLinkedListHeadCopy: NodesLinkedListPointer;
+  begin
+    nodesLinkedListHeadCopy := nodesLinkedListHead;
+    findNodeById := nil;
+    while nodesLinkedListHeadCopy <> nil do
+    begin
+      if nodesLinkedListHeadCopy^.node^.id = nodeId then
+      begin
+        findNodeById := nodesLinkedListHeadCopy^.node;
+        break;
+      end;
+      nodesLinkedListHeadCopy := nodesLinkedListHeadCopy^.nextElement;
+    end;
+  end;
+
+  function getConnectionEndNodeId(nodeConnection: string): integer;
+  begin
+    getConnectionEndNodeId := getValueOf(getNodeConnectionData(nodeConnection)[0]);
+  end;
+
+  function getConnectionDistanceToEndNode(nodeConnection: string): integer;
+  begin
+    getConnectionDistanceToEndNode := getValueOf(getNodeConnectionData(nodeConnection)[1]);
+  end;
+
+  procedure establishConnectionsForNode(aNode: NodePointer; nodeConnections: arrayOfString);
   var
     edgesIndex: integer;
-    nodeConnectionData: arrayOfString;
+    nodeConnection: string;
     distanceToEndNode: integer;
     endNodeId: integer;
-    nodeConnection: string;
   begin
     edgesIndex := 0;
     for nodeConnection in nodeConnections do
     begin
-      nodeConnectionData := trimArray(splitStringByChar(SPACE, nodeConnection));
-      endNodeId := getValueOf(nodeConnectionData[0]);
-      aNode.edges[edgesIndex].endNode := findNodeById(nodesLinkedListHead, endNodeId);
-
-      distanceToEndNode := getValueOf(nodeConnectionData[1]);
-      aNode.edges[edgesIndex].distanceToEndNode := distanceToEndNode;
+      endNodeId := getConnectionEndNodeId(nodeConnection);
+      distanceToEndNode := getConnectionDistanceToEndNode(nodeConnection);
+      aNode^.edges[edgesIndex].endNode := findNodeById(nodesLinkedListHead, endNodeId);
+      aNode^.edges[edgesIndex].distanceToEndNode := distanceToEndNode;
       Inc(edgesIndex);
     end;
   end;
 
-  procedure establishConnectionsBetweenNodesByTheirDefinition(var nodesLinkedListHead: NodesLinkedListPointer;
+  procedure establishConnectionsBetweenNodesInListByTheirDefinition(var nodesLinkedListHead: NodesLinkedListPointer;
     nodesDefinitions: arrayOfString);
   var
     nodesLinkedListHeadCopy: NodesLinkedListPointer;
     nodeConnections: arrayOfString;
-    aNode: Node;
+    aNode: NodePointer;
     nodeDefinition: string;
   begin
     nodesLinkedListHeadCopy := nodesLinkedListHead;
     while nodesLinkedListHeadCopy <> nil do
     begin
-      aNode := nodesLinkedListHeadCopy^.node^;
-      nodeDefinition := nodesDefinitions[aNode.id - 1];
+      aNode := nodesLinkedListHeadCopy^.node;
+      nodeDefinition := nodesDefinitions[aNode^.id - 1];
       nodeConnections := getNodeConnections(nodeDefinition);
       establishConnectionsForNode(aNode, nodeConnections);
       nodesLinkedListHeadCopy := nodesLinkedListHeadCopy^.nextElement;
     end;
-
   end;
 
 var
@@ -452,8 +457,8 @@ begin
     nodesDefinitions := getNodesDefinitions();
     if areUnderstandableNodesDefinitions(nodesDefinitions) then
     begin
-      createNodesByTheirDefinitions(nodesLinkedListHead, nodesDefinitions);
-      establishConnectionsBetweenNodesByTheirDefinition(nodesLinkedListHead, nodesDefinitions);
+      createNodesInListByTheirDefinitions(nodesLinkedListHead, nodesDefinitions);
+      establishConnectionsBetweenNodesInListByTheirDefinition(nodesLinkedListHead, nodesDefinitions);
     end;
   end;
 
