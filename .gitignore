@@ -12,3 +12,4 @@ lib/*
 backup/*
 *.exe
 *.lps
+*.lpi
