@@ -4,11 +4,12 @@ uses
   SysUtils;
 
 const
-  INFINITY = High(integer);
   INPUT_FILE_FLAG = '-i';
   OUTPUT_FILE_FLAG = '-o';
   START_NODE_FLAG = '-s';
   END_NODE_FLAG = '-k';
+
+  INFINITY = High(integer);
   SPACE = ' ';
   DOUBLE_SPACE = SPACE + SPACE;
   SEMICOLON = ';';
@@ -26,19 +27,20 @@ type
 
   Node = record
     id: integer;
+    distance: integer;
     edges: array of Edge;
   end;
 
-  NodesLinkedListPointer = ^NodesLinkedList;
+  NodesListPointer = ^NodesList;
 
-  NodesLinkedList = record
+  NodesList = record
     node: NodePointer;
-    nextElement: NodesLinkedListPointer;
+    nextElement: NodesListPointer;
   end;
 
 var
   i: integer;
-  nodesLinkedListHead: NodesLinkedListPointer = nil;
+  nodesListHead: NodesListPointer = nil;
 
   function createNode(id: integer; edgesCount: integer): NodePointer;
   begin
@@ -47,7 +49,7 @@ var
     SetLength(createNode^.edges, edgesCount);
   end;
 
-  function hasNextNode(listOfNodes: NodesLinkedListPointer): boolean;
+  function hasNextNode(listOfNodes: NodesListPointer): boolean;
   begin
     hasNextNode := listOfNodes^.nextElement^.node <> nil;
   end;
@@ -361,17 +363,17 @@ var
     createNodeByDefinition := createNode(nodeId, edgesSize);
   end;
 
-  procedure appendNodesLinkedList(var nodesLinkedListHead: NodesLinkedListPointer; nodeToBeAdded: NodePointer);
+  procedure appendNodesList(var nodesListHead: NodesListPointer; nodeToBeAdded: NodePointer);
   var
-    nodesLinkedListElement: NodesLinkedListPointer = nil;
+    nodesListElement: NodesListPointer = nil;
   begin
-    new(nodesLinkedListElement);
-    nodesLinkedListElement^.node := nodeToBeAdded;
-    nodesLinkedListElement^.nextElement := nodesLinkedListHead;
-    nodesLinkedListHead := nodesLinkedListElement;
+    new(nodesListElement);
+    nodesListElement^.node := nodeToBeAdded;
+    nodesListElement^.nextElement := nodesListHead;
+    nodesListHead := nodesListElement;
   end;
 
-  procedure createNodesInListByTheirDefinitions(var nodesLinkedListHead: NodesLinkedListPointer;
+  procedure createNodesInNodesListByTheirDefinitions(var nodesListHead: NodesListPointer;
     nodesDefinitions: arrayOfString);
   var
     nodeDefinition: string;
@@ -379,25 +381,27 @@ var
   begin
     for nodeDefinition in nodesDefinitions do
     begin
-      appendNodesLinkedList(nodesLinkedListHead, createNodeByDefinition(nodeId, nodeDefinition));
+      appendNodesList(nodesListHead, createNodeByDefinition(nodeId, nodeDefinition));
       Inc(nodeId);
     end;
   end;
 
-  function findNodeById(nodesLinkedListHead: NodesLinkedListPointer; nodeId: integer): NodePointer;
-  var
-    nodesLinkedListHeadCopy: NodesLinkedListPointer;
+  function isEndOfList(nodesList: NodesListPointer): boolean;
   begin
-    nodesLinkedListHeadCopy := nodesLinkedListHead;
-    findNodeById := nil;
-    while nodesLinkedListHeadCopy <> nil do
+    isEndOfList := nodesList = nil;
+  end;
+
+  function findNodeInNodesListById(nodesList: NodesListPointer; nodeId: integer): NodePointer;
+  begin
+    findNodeInNodesListById := nil;
+    while not isEndOfList(nodesList) do
     begin
-      if nodesLinkedListHeadCopy^.node^.id = nodeId then
+      if nodesList^.node^.id = nodeId then
       begin
-        findNodeById := nodesLinkedListHeadCopy^.node;
+        findNodeInNodesListById := nodesList^.node;
         break;
       end;
-      nodesLinkedListHeadCopy := nodesLinkedListHeadCopy^.nextElement;
+      nodesList := nodesList^.nextElement;
     end;
   end;
 
@@ -423,33 +427,88 @@ var
     begin
       endNodeId := getConnectionEndNodeId(nodeConnection);
       distanceToEndNode := getConnectionDistanceToEndNode(nodeConnection);
-      aNode^.edges[edgesIndex].endNode := findNodeById(nodesLinkedListHead, endNodeId);
+      aNode^.edges[edgesIndex].endNode := findNodeInNodesListById(nodesListHead, endNodeId);
       aNode^.edges[edgesIndex].distanceToEndNode := distanceToEndNode;
       Inc(edgesIndex);
     end;
   end;
 
-  procedure establishConnectionsBetweenNodesInListByTheirDefinition(var nodesLinkedListHead: NodesLinkedListPointer;
+  procedure establishConnectionsForNodesInNodesListByDefinitions(nodesList: NodesListPointer;
     nodesDefinitions: arrayOfString);
   var
-    nodesLinkedListHeadCopy: NodesLinkedListPointer;
     nodeConnections: arrayOfString;
     aNode: NodePointer;
     nodeDefinition: string;
   begin
-    nodesLinkedListHeadCopy := nodesLinkedListHead;
-    while nodesLinkedListHeadCopy <> nil do
+    while not isEndOfList(nodesList) do
     begin
-      aNode := nodesLinkedListHeadCopy^.node;
+      aNode := nodesList^.node;
       nodeDefinition := nodesDefinitions[aNode^.id - 1];
       nodeConnections := getNodeConnections(nodeDefinition);
       establishConnectionsForNode(aNode, nodeConnections);
-      nodesLinkedListHeadCopy := nodesLinkedListHeadCopy^.nextElement;
+      nodesList := nodesList^.nextElement;
+    end;
+  end;
+
+  function findNodeWithLowestDistanceInNodesList(nodesList: NodesListPointer): NodePointer;
+  var
+    aNode: NodePointer;
+    lowestDistance: integer;
+  begin
+    lowestDistance := nodesList^.node^.distance;
+    findNodeWithLowestDistanceInNodesList := nodesList^.node;
+    while not isEndOfList(nodesList) do
+    begin
+      aNode := nodesList^.node;
+      if lowestDistance > aNode^.distance then
+      begin
+        lowestDistance := aNode^.distance;
+        findNodeWithLowestDistanceInNodesList := aNode;
+      end;
+      nodesList := nodesList^.nextElement;
+    end;
+  end;
+
+  procedure setInfinityDistanceForEachNodeInNodesList(nodesList: NodesListPointer);
+  begin
+    while not isEndOfList(nodesList) do
+    begin
+      nodesList^.node^.distance := INFINITY;
+      nodesList := nodesList^.nextElement;
+    end;
+  end;
+
+  procedure removeFromNodesList(var nodesList: NodesListPointer; nodeToBeRemoved: NodePointer);
+  var
+    nodesListCopy: NodesListPointer;
+    previousNodesListElement: NodesListPointer = nil;
+  begin
+    nodesListCopy := nodesList;
+    while not isEndOfList(nodesList) do
+    begin
+      if nodesList^.node^.id = nodeToBeRemoved^.id then
+      begin
+        if previousNodesListElement = nil then
+        begin
+          nodesList := nil;
+          break;
+        end;
+        previousNodesListElement^.nextElement := nodesList^.nextElement;
+        nodesList := nodesListCopy;
+        break;
+      end;
+      previousNodesListElement := nodesList;
+      nodesList := nodesList^.nextElement;
     end;
   end;
 
 var
   nodesDefinitions: arrayOfString;
+  startNode: NodePointer;
+  evaluationNode: NodePointer;
+  unvisitedNodes: NodesListPointer;
+  anEdge: Edge;
+  totalDistanceToEndNode: integer = 0;
 
 begin
   if hasCommandLineOptionsSetCorrectly() then
@@ -457,8 +516,35 @@ begin
     nodesDefinitions := getNodesDefinitions();
     if areUnderstandableNodesDefinitions(nodesDefinitions) then
     begin
-      createNodesInListByTheirDefinitions(nodesLinkedListHead, nodesDefinitions);
-      establishConnectionsBetweenNodesInListByTheirDefinition(nodesLinkedListHead, nodesDefinitions);
+      createNodesInNodesListByTheirDefinitions(nodesListHead, nodesDefinitions);
+      establishConnectionsForNodesInNodesListByDefinitions(nodesListHead, nodesDefinitions);
+
+      // TODO: extract the following code to a function
+      setInfinityDistanceForEachNodeInNodesList(nodesListHead);
+      unvisitedNodes := nil;
+      startNode := findNodeInNodesListById(nodesListHead, getStartNodeId());
+      startNode^.distance := 0;
+      appendNodesList(unvisitedNodes, startNode);
+
+      while not isEndOfList(unvisitedNodes) do
+      begin
+        evaluationNode := findNodeWithLowestDistanceInNodesList(unvisitedNodes);
+        if evaluationNode^.id = getEndNodeId() then
+        begin
+          writeln(evaluationNode^.id);
+          break;
+        end;
+        removeFromNodesList(unvisitedNodes, evaluationNode);
+        for anEdge in evaluationNode^.edges do
+        begin
+          totalDistanceToEndNode := evaluationNode^.distance + anEdge.distanceToEndNode;
+          if anEdge.endNode^.distance > totalDistanceToEndNode then
+          begin
+            anEdge.endNode^.distance := totalDistanceToEndNode;
+            appendNodesList(unvisitedNodes, anEdge.endNode);
+          end;
+        end;
+      end;
     end;
   end;
 
