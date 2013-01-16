@@ -78,6 +78,11 @@ var
     val(aString, getValueOf);
   end;
 
+  function toString(anInteger: integer): string;
+  begin
+    Str(anInteger, toString);
+  end;
+
   function getStartNodeId(): integer;
   begin
     getStartNodeId := getValueOf(getArgumentByFlag(START_NODE_FLAG));
@@ -502,13 +507,74 @@ var
     end;
   end;
 
+  procedure saveCalculationsResults(shortestPath: string; totalDistance: integer);
+  var fileContent:Text;
+  begin
+    Assign(fileContent, getOutputFileName());
+    Rewrite(fileContent);
+    writeln(fileContent, shortestPath);
+    writeln(fileContent, totalDistance);
+    Close(fileContent);
+  end;
+
+  procedure calculateShortestPath(nodesListHead: NodesListPointer);
+  var
+    trail: array of integer;
+    evaluationNode: NodePointer;
+    startNode: NodePointer;
+    unvisitedNodes: NodesListPointer;
+    totalDistanceToEndNode: integer = 0;
+    anEdge: Edge;
+
+    procedure leaveATrail(startNode: NodePointer; endNode: NodePointer);
+    begin
+      trail[endNode^.id] := startNode^.id;
+    end;
+
+    function getTrailForNode(nodeId: integer): string;
+    var
+      i: integer = 0;
+    begin
+      i := nodeId;
+      getTrailForNode := toString(getEndNodeId());
+      while i <> getStartNodeId() do
+      begin
+        getTrailForNode := toString(trail[i]) + ' ' + getTrailForNode;
+        i := trail[i];
+      end;
+    end;
+
+  begin
+    SetLength(trail, getNodesCount());
+    setInfinityDistanceForEachNodeInNodesList(nodesListHead);
+    unvisitedNodes := nil;
+    startNode := findNodeInNodesListById(nodesListHead, getStartNodeId());
+    startNode^.distance := 0;
+    appendNodesList(unvisitedNodes, startNode);
+    while not isEndOfList(unvisitedNodes) do
+    begin
+      evaluationNode := findNodeWithLowestDistanceInNodesList(unvisitedNodes);
+      if evaluationNode^.id = getEndNodeId() then
+      begin
+        saveCalculationsResults(getTrailForNode(getEndNodeId()), evaluationNode^.distance);
+        break;
+      end;
+      removeFromNodesList(unvisitedNodes, evaluationNode);
+      for anEdge in evaluationNode^.edges do
+      begin
+        totalDistanceToEndNode := evaluationNode^.distance + anEdge.distanceToEndNode;
+        if anEdge.endNode^.distance > totalDistanceToEndNode then
+        begin
+          anEdge.endNode^.distance := totalDistanceToEndNode;
+          leaveATrail(evaluationNode, anEdge.endNode);
+          appendNodesList(unvisitedNodes, anEdge.endNode);
+        end;
+      end;
+    end;
+  end;
+
 var
   nodesDefinitions: arrayOfString;
-  startNode: NodePointer;
-  evaluationNode: NodePointer;
-  unvisitedNodes: NodesListPointer;
-  anEdge: Edge;
-  totalDistanceToEndNode: integer = 0;
 
 begin
   if hasCommandLineOptionsSetCorrectly() then
@@ -518,36 +584,9 @@ begin
     begin
       createNodesInNodesListByTheirDefinitions(nodesListHead, nodesDefinitions);
       establishConnectionsForNodesInNodesListByDefinitions(nodesListHead, nodesDefinitions);
-
-      // TODO: extract the following code to a function
-      setInfinityDistanceForEachNodeInNodesList(nodesListHead);
-      unvisitedNodes := nil;
-      startNode := findNodeInNodesListById(nodesListHead, getStartNodeId());
-      startNode^.distance := 0;
-      appendNodesList(unvisitedNodes, startNode);
-
-      while not isEndOfList(unvisitedNodes) do
-      begin
-        evaluationNode := findNodeWithLowestDistanceInNodesList(unvisitedNodes);
-        if evaluationNode^.id = getEndNodeId() then
-        begin
-          writeln(evaluationNode^.id);
-          break;
-        end;
-        removeFromNodesList(unvisitedNodes, evaluationNode);
-        for anEdge in evaluationNode^.edges do
-        begin
-          totalDistanceToEndNode := evaluationNode^.distance + anEdge.distanceToEndNode;
-          if anEdge.endNode^.distance > totalDistanceToEndNode then
-          begin
-            anEdge.endNode^.distance := totalDistanceToEndNode;
-            appendNodesList(unvisitedNodes, anEdge.endNode);
-          end;
-        end;
-      end;
+      calculateShortestPath(nodesListHead);
     end;
   end;
-
   writeln();
   writeln('Nacisnij enter aby zakonczyc.');
   readln();
