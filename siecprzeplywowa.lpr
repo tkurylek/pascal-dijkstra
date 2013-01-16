@@ -508,7 +508,8 @@ var
   end;
 
   procedure saveCalculationsResults(shortestPath: string; totalDistance: integer);
-  var fileContent:Text;
+  var
+    fileContent: Text;
   begin
     Assign(fileContent, getOutputFileName());
     Rewrite(fileContent);
@@ -517,7 +518,7 @@ var
     Close(fileContent);
   end;
 
-  procedure calculateShortestPath(nodesListHead: NodesListPointer);
+  procedure calculateShortestPathAndSaveResults(nodesListHead: NodesListPointer);
   var
     trail: array of integer;
     evaluationNode: NodePointer;
@@ -573,6 +574,18 @@ var
     end;
   end;
 
+  procedure disposeList(nodesListHead: NodesListPointer);
+  var
+    nodesListElement: NodesListPointer;
+  begin
+    while not isEndOfList(nodesListHead) do
+    begin
+      nodesListElement := nodesListHead^.nextElement;
+      nodesListHead := nodesListElement;
+      Dispose(nodesListElement);
+    end;
+  end;
+
 var
   nodesDefinitions: arrayOfString;
 
@@ -584,10 +597,10 @@ begin
     begin
       createNodesInNodesListByTheirDefinitions(nodesListHead, nodesDefinitions);
       establishConnectionsForNodesInNodesListByDefinitions(nodesListHead, nodesDefinitions);
-      calculateShortestPath(nodesListHead);
+      calculateShortestPathAndSaveResults(nodesListHead);
     end;
   end;
-  writeln();
+  disposeList(nodesListHead);
   writeln('Nacisnij enter aby zakonczyc.');
   readln();
 end.
