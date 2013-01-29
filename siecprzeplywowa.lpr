@@ -16,7 +16,7 @@ const
   SEMICOLON_WITH_SPACE = SEMICOLON + SPACE;
 
 type
-  arrayOfString = array of string;
+  ArrayOfString = array of string;
 
   NodePointer = ^Node;
 
@@ -210,7 +210,7 @@ var
     isEmpty := Length(aString) = 0;
   end;
 
-  function countEmptyStringOccurrences(anArrayOfString: arrayOfString): integer;
+  function countEmptyStringOccurrences(anArrayOfString: ArrayOfString): integer;
   var
     aString: string;
   begin
@@ -220,7 +220,7 @@ var
         Inc(countEmptyStringOccurrences);
   end;
 
-  function trimArray(anArrayOfString: arrayOfString): arrayOfString;
+  function trimArray(anArrayOfString: ArrayOfString): ArrayOfString;
   var
     aString: string;
   begin
@@ -256,7 +256,7 @@ var
     trimNodeDefinition := removeSpacesAfterSemicolons(removeMultipleSpaces(aString));
   end;
 
-  function getNodesDefinitions(): arrayOfString;
+  function getNodesDefinitions(): ArrayOfString;
   var
     fileContent: Text;
   begin
@@ -291,7 +291,7 @@ var
         Inc(countCharOccurrencesInString);
   end;
 
-  function splitStringByChar(separator: char; aString: string): arrayOfString;
+  function splitStringByChar(separator: char; aString: string): ArrayOfString;
   var
     letter: char;
   begin
@@ -304,12 +304,12 @@ var
         splitStringByChar[i] := splitStringByChar[i] + letter;
   end;
 
-  function getNodeConnections(nodeDefinition: string): arrayOfString;
+  function getNodeConnections(nodeDefinition: string): ArrayOfString;
   begin
     getNodeConnections := trimArray(splitStringByChar(SEMICOLON, nodeDefinition));
   end;
 
-  function getNodeConnectionData(nodeConnection: string): arrayOfString;
+  function getNodeConnectionData(nodeConnection: string): ArrayOfString;
   begin
     getNodeConnectionData := trimArray(splitStringByChar(SPACE, nodeConnection));
   end;
@@ -317,7 +317,7 @@ var
   function isUnderstandableNodeDefinition(nodeDefinition: string): boolean;
   var
     nodeConnection: string;
-    nodeConnectionData: arrayOfString;
+    nodeConnectionData: ArrayOfString;
     endNodeIdString: string;
     distanceToEndNodeString: string;
     nodeId: integer = 1;
@@ -334,6 +334,8 @@ var
       else if not isAnInteger(endNodeIdString) then
         writeln('Wezel ', nodeId, ' nie moze zostac polaczony z wezlem "', endNodeIdString,
           '". Identyfikatory wezlow musza byc liczba calkowita!')
+      else if not isPointingToAnExistingNode(getValueOf(endNodeIdString)) then
+        writeln('Wezel ', nodeId, ' nie moze zostac polaczony z wezlem ', endNodeIdString, ' bo nie istnieje!')
       else if not isAnInteger(distanceToEndNodeString) then
         writeln('Wezel ', nodeId, ' nie moze zostac polaczony z wezlem ', endNodeIdString,
           ' dystansem "', distanceToEndNodeString, '". Dystans miedzy wezlami musi byc liczba calkowita!')
@@ -344,7 +346,7 @@ var
     end;
   end;
 
-  function areUnderstandableNodesDefinitions(nodesDefinitions: arrayOfString): boolean;
+  function areUnderstandableNodesDefinitions(nodesDefinitions: ArrayOfString): boolean;
   var
     nodeDefinition: string;
   begin
@@ -379,7 +381,7 @@ var
   end;
 
   procedure createNodesInNodesListByTheirDefinitions(var nodesListHead: NodesListPointer;
-    nodesDefinitions: arrayOfString);
+    nodesDefinitions: ArrayOfString);
   var
     nodeDefinition: string;
     nodeId: integer = 1;
@@ -420,7 +422,7 @@ var
     getConnectionDistanceToEndNode := getValueOf(getNodeConnectionData(nodeConnection)[1]);
   end;
 
-  procedure establishConnectionsForNode(aNode: NodePointer; nodeConnections: arrayOfString);
+  procedure establishConnectionsForNode(aNode: NodePointer; nodeConnections: ArrayOfString);
   var
     edgesIndex: integer;
     nodeConnection: string;
@@ -439,9 +441,9 @@ var
   end;
 
   procedure establishConnectionsForNodesInNodesListByDefinitions(nodesList: NodesListPointer;
-    nodesDefinitions: arrayOfString);
+    nodesDefinitions: ArrayOfString);
   var
-    nodeConnections: arrayOfString;
+    nodeConnections: ArrayOfString;
     aNode: NodePointer;
     nodeDefinition: string;
   begin
@@ -587,7 +589,7 @@ var
   end;
 
 var
-  nodesDefinitions: arrayOfString;
+  nodesDefinitions: ArrayOfString;
 
 begin
   if hasCommandLineOptionsSetCorrectly() then
